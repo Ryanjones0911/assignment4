@@ -25,15 +25,21 @@ void main() {
     // HINT: compute the following - light direction, ambient + diffuse + specular component,
     // then set the final color as a combination of these components
     // normalize vectors
-    vec3 N = normalize(interpolatedNormal);                // surface normal
-    vec3 L = normalize(spherePosition - worldPosition);    // light direction
-    vec3 V = normalize(-viewPosition);                     // view direction (camera at origin)
-    vec3 H = normalize(L + V);                             // halfway vector
 
-    // compute lighting terms
+    // this is all just a translation of the equation 
+    // I = (Ka * Ia) + (Kd * Il * max(0, N · L)) + (Ks * Il * max(0, N · H)^Ns)
+    // into code
+
+    // "https://garykeen27.wixsite.com/portfolio/blinn-phong-shading" was used to assist in understanding
+
+        
+    vec3 lightDir = normalize(spherePosition - worldPosition);   
+    vec3 viewDir = normalize(-viewPosition);                     
+    vec3 halfwayVector = normalize(lightDir + viewDir);                             
+
     vec3 ambient  = kAmbient  * ambientColor;
-    vec3 diffuse  = kDiffuse  * max(dot(N, L), 0.0) * diffuseColor;
-    vec3 specular = kSpecular * pow(max(dot(N, H), 0.0), shininess) * specularColor;
+    vec3 diffuse  = kDiffuse  * max(dot(interpolatedNormal, lightDir), 0.0) * diffuseColor;
+    vec3 specular = kSpecular * pow(max(dot(interpolatedNormal, halfwayVector), 0.0), shininess) * specularColor;
 
     // final color
     gl_FragColor = vec4(ambient + diffuse + specular, 1.0);

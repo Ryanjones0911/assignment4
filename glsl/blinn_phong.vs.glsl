@@ -13,8 +13,12 @@ void main() {
     
     // TODO: compute the out variables declared above. Think about which frame(s) each
     // variable should be defined with respect to
+
+    // we take each vertex and 1) put it in terms of world coordinates instead of local to the dragon,
+    // 2) get the normal and put it into world coordinates as well, and
+    // 3) pass the view position along in world space so we can do math on it in the fragment
     worldPosition = vec3(modelMatrix * vec4(position, 1.0));
-    interpolatedNormal = normalize(mat3(modelMatrix) * normal);
+    interpolatedNormal = normalize(mat3(modelMatrix) * normal); // 3x3 to avoid translation and scaling, we only want the model matrix to rotate the normal to face the correct direction
     viewPosition = worldPosition;
 
     gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
