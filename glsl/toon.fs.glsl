@@ -8,7 +8,6 @@ uniform vec3 outlineColor;
 // below we can see the shared variable we passed from the vertex shader using the 'in' classifier
 in vec3 interpolatedNormal;
 in vec3 lightDirection;
-in vec3 viewPosition;
 in float fresnel;
 
 void main() {
@@ -23,5 +22,16 @@ void main() {
     // near the edge of the 3D model. Use a reasonable value as the threshold for the
     // silhouette thickness (i.e. proximity to edge).
 
-    gl_FragColor = vec4(0.5, 0.0, 1.0, 1.0);
+    float lightIntensity = abs(dot(interpolatedNormal, lightDirection));
+
+    float quantized = step(0.5, lightIntensity);
+
+    vec3 toonColorFinal = mix(toonColor2, toonColor, quantized);
+
+
+    // outline size can be governed by adjusting this threshold value
+    if (fresnel < .2)
+        gl_FragColor = vec4(outlineColor, 1.0);   // outline (black)
+    else
+        gl_FragColor = vec4(toonColorFinal, 1.0); // toon-shaded surface
 }

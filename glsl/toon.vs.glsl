@@ -7,7 +7,6 @@ uniform vec3 spherePosition;
 // below we can see the shared variable is initialized in the vertex shader using the 'out' classifier
 out vec3 interpolatedNormal;
 out vec3 lightDirection;
-out vec3 viewPosition;
 out float fresnel; // NOTE: this refers to the dot product of view direction and normal
 
 void main() {
@@ -15,6 +14,19 @@ void main() {
     // Compute vertex position, light direction in VCS, and transform the normal to
     // an appropriate frame. Then determine if a vertex lies on the silhouette edge 
     // of the model or not and set `fresnel` appropriately.
+
+    // same as in part A1, just taking the local coordiates and transforming them to world coordinates, as well as figuring out
+    // what the light direction is in world coordinates. Don't think we need it but rather have it
+    vec3 worldPosition = vec3(modelMatrix * vec4(position, 1.0));
+    interpolatedNormal = normalize(mat3(modelMatrix) * normal);
+    lightDirection = normalize(spherePosition - worldPosition);
+
+
+    vec3 viewDir = normalize(-worldPosition);
+
+    // for figuring out the border for the black outline. We use abs() to make sure the back isnt just perma-black
+    fresnel = abs(dot(interpolatedNormal, viewDir));
+
 
     gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
 }

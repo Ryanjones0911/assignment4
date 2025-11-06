@@ -15,6 +15,8 @@ This was simple enough to do since all it really entailed was taking the Blinn-P
 
 ![alt text](photos/PhongVsBlinnPhong.JPEG)
 
+
+
 But this was not strictly necessary. (Apologies for the french, I'm using my notes as a way to practice)
 
 The fragment shader just needed to make sure the normals are facing the right way and that the pixels of the model are being worked with in world space instead of local. 
@@ -52,3 +54,102 @@ As a sidenote I went into A4.js and played with the color values slightly to mor
 
 ![alt text](photos/BeforeColorCorrection.png)
 ![alt text](photos/Part1aComplete.png)
+
+
+Part 1b:
+
+So I don't like how this turned out and it doesn't look as nice as the demo picture, but it does establish a black outline that is not affected by light and it does interpolate between two colors based on light intensity so it satisfies the requirements of this part. With more time I would really like to make this work better.
+
+Vertex shader was much the same story as 1a, just with the addition of computing this fresnel term that was used for determining where the outine should go
+
+"""
+    // same as in part A1, just taking the local coordiates and transforming them to world coordinates, as well as figuring out
+    // what the light direction is in world coordinates. Don't think we need it but rather have it
+    vec3 worldPosition = vec3(modelMatrix * vec4(position, 1.0));
+    interpolatedNormal = normalize(mat3(modelMatrix) * normal);
+    lightDirection = normalize(spherePosition - worldPosition);
+
+
+    vec3 viewDir = normalize(-worldPosition);
+
+    // for figuring out the border for the black outline
+    fresnel = dot(interpolatedNormal, viewDir);
+"""
+
+Fragment shader was a matter of doing my best to follow what the lengthy guide comment advised to do. 
+Calculate the light intensity via dot product, set up a step function to interpolate between the two colors, and 
+determine where the fresnel cutoff for the black border should go
+
+"""
+    float lightIntensity = abs(dot(interpolatedNormal, lightDirection));
+
+    float quantized = step(0.5, lightIntensity);
+
+    vec3 toonColorFinal = mix(toonColor2, toonColor, quantized);
+
+
+    // outline size can be governed by adjusting this threshold value
+    if (fresnel < .2)
+        gl_FragColor = vec4(outlineColor, 1.0);   // outline (black)
+    else
+        gl_FragColor = vec4(toonColorFinal, 1.0); // toon-shaded surface
+"""
+
+I would note that I ended up removing the attribute of viewPosition as I did not end up using it. This is very likely why I have had trouble making it look it nice as that was probably there for a reason. 
+
+![alt text](photos/Part1bComplete.png)
+
+
+Part 1c:
+
+This one is cool, I like it. Turned out really well. Setting up the vertex shader was simple enough (though there's a trap in there if you're not careful), and the fragment was fun to figure out how to get scrolling dots on screen. 
+
+Vertex shader was keeping to the theme of this assignment for the most part, normalize the normals and rotate them correctly, calculate the light direction vertex, etc. But to make the dots render work we actually do not want to convert the vertex position into world coordinates. We want the dot pattern to stay confined to the dragon and we're not concerned with vertex dependent lighting calculations so we actually want the vertices to stay local. That'll trip you up if you're not careful
+
+"""
+    // TODO:
+    // HINT: We need vertexPosition in local object frame, lightDirection in VCS.
+    // And don't forget to transform the normal to an appropriate frame!
+
+    interpolatedNormal = normalize(mat3(modelMatrix) * normal);
+
+    //defaults to local coordinates, no need to manipulate
+    vertexPosition = position; 
+    lightDirection = normalize(spherePosition - vec3(modelMatrix * vec4(position, 1.0)));
+"""
+
+Fragment shader is where the fun is. Calculating the light intensity was not something new as we've done it twice now and the process is much the same here. Creating a dynamic blend of a base color was fun though, it's interesting that it's basically setting the color at a given frame according to the oscillation of a sine wave. Of course that isn't the really interesting part, that's the dots. So how do we do this? Well we can use the fact that modulus of 1 essentially bounds a repeating pattern to the range [0,1] forever. So we use this to build a grid with which we can render dots. Set our vertexPosition (that is still local, that's why this works), multiply it by some scalar that governs the relative size of the box we have to play in, and add to that some varying vector governed chiefly by the ticks uniform that will govern what direction the grid "flows" so to speak. We want to know the center of this mathematical object we've created so we subtract by .5 to make sure we're there. We then want to know how far away a given vertex is from the center of our object so we set up an equation that subtracts distances to find that. Finally, if the vertex is some distance away from the center, we tell GLSL that we don't want to render it. All of this in conjunction gives us the visual of a dragon made up of a field of infinitely repeating and traveling dots. 
+
+TL:DR, we build a grid of "dot space" and if our vertices at a given point in time are not "dot candidates" we don't render those vertices. Repeated ad infinitum and we get our effect.
+
+"""
+    // TODO:
+    // HINT: First, as you've already done in the Toon fragment shader, compute the light
+    // intensity of the current fragment by determining the cosine angle between the surface
+    // normal and the light vector. Next, pick any two colors, blend them based on light
+    // intensity to give the 3D model some color and depth. Also make the color change wrt tick.
+    // Next, implement rolling dots using the mod function, tick and discard.
+
+    float lightIntensity = abs(dot(interpolatedNormal, lightDirection));
+
+    //these colors are completely arbitrary, can be changed to anything
+    vec3 baseColor = mix(vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 1.0), lightIntensity) * sin(ticks * 0.9);
+
+    //dots (this block is explained in depth in the README)
+    vec3 dotGrid = mod(vertexPosition * 11.0 + vec3(ticks * 0.5, 0.0, 0.0), 1.0);
+    vec3 centered = dotGrid - 0.5;
+    float distance = length(centered.xy);
+    if (distance < 0.2) {
+        discard;
+    }
+
+    // HINT: Set final rendered colour
+    gl_FragColor = vec4(baseColor, 1.0);
+"""
+
+![alt text](photos/Part1cCompleted.png)
+![alt text](photos/Part1cDifferentValues.png)
+
+
+Part 1d:
+
