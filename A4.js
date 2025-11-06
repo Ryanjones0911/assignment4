@@ -11,6 +11,7 @@ import {
 import * as THREE from "./js/three.module.js";
 import { SourceLoader } from "./js/SourceLoader.js";
 import { THREEx } from "./js/KeyboardState.js";
+import { GLTFLoader } from './js/GLTFLoader.js';
 
 // Setup the renderer
 // You should look into js/setup.js to see what exactly is done here.
@@ -81,8 +82,23 @@ const dotsMaterial = new THREE.ShaderMaterial({
 // TODO: Load relevent textures cafeColorMap, cafeNormalMap, cafeOccRoughMetalMap
 // using THREE.TextureLoader
 
-const cafePBRMaterial = new THREE.MeshStandardMaterial({
+const albedoMap = new THREE.TextureLoader().load('gltf/Default_albedo.jpg');
+const ambientOcclusionMap = new THREE.TextureLoader().load('gltf/Default_AO.jpg');
+const emissiveMap = new THREE.TextureLoader().load('gltf/Default_emissive.jpg');
+const metalRoughnessMap = new THREE.TextureLoader().load('gltf/Default_metalRoughness.jpg');
+const normalMap = new THREE.TextureLoader().load('gltf/Default_normal.jpg');
+
+
+
+const helmetMaterial = new THREE.MeshStandardMaterial({
   // TODO: pass texture maps to the material. And set material's metalness.
+  map: albedoMap,
+  aoMap: ambientOcclusionMap,
+  emissiveMap: emissiveMap,
+  roughnessMap: metalRoughnessMap,
+  metalnessMap: metalRoughnessMap,
+  normalMap: normalMap,
+  metalness: 1,
 });
 
 // Load shaders
@@ -116,7 +132,7 @@ const shaders = {
   BLINNPHONG: { key: 0, material: blinnPhongMaterial },
   TOON: { key: 1, material: toonMaterial },
   DOTS: { key: 2, material: dotsMaterial },
-  PBR: { key: 3, material: cafePBRMaterial },
+  PBR: { key: 3, material: helmetMaterial },
 };
 
 let mode = shaders.BLINNPHONG.key; // Default
@@ -135,29 +151,18 @@ for (let shader of Object.values(shaders)) {
   sphere.parent = worldFrame;
   scene.add(sphere);
 
+  
   // Load the coffee machine, for scene key 4.
-  if (shader.material == cafePBRMaterial) {
-    const coffee_machine = new THREE.Group();
-    
-    // Note the coffee maker has two models associated with one set of textures!
-    loadAndPlaceGLB("gltf/machine.glb", shader.material, function (machine) {
-      machine.scale.set(10, 10, 10);
-      machine.parent = worldFrame;
-      coffee_machine.add(machine);
-    });
+if (shader.material == helmetMaterial) {
+  const loader = new GLTFLoader().setPath('gltf/');
+  loader.load('DamagedHelmet.gltf', function (gltf) {
+    const model = gltf.scene;
+    model.position.set(3.8, 0.4, -1.3);
+    model.scale.set(10,10,10);
 
-    loadAndPlaceGLB("gltf/caraf.glb", shader.material, function (caraf) {
-      caraf.position.set(3.8, 0.4, -1.3);
-      caraf.scale.set(10, 10, 10);
-      caraf.parent = worldFrame;
-      coffee_machine.add(caraf);
-    });
+    scene.add(model);
+  });
 
-    coffee_machine.position.set(-2.5, -5, -15);
-    coffee_machine.rotation.y = -Math.PI / 2;
-    coffee_machine.scale.set(2, 2, 2);
-
-    scene.add(coffee_machine);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 3.0);
     scene.add(ambientLight);
@@ -205,7 +210,7 @@ function checkKeyboard() {
   // The following tells three.js that some uniforms might have changed
   sphereMaterial.needsUpdate = true;
   blinnPhongMaterial.needsUpdate = true;
-  cafePBRMaterial.needsUpdate = true;
+  helmetMaterial.needsUpdate = true;
   toonMaterial.needsUpdate = true;
   dotsMaterial.needsUpdate = true;
 }

@@ -153,3 +153,73 @@ TL:DR, we build a grid of "dot space" and if our vertices at a given point in ti
 
 Part 1d:
 
+So this was somewhat frustrating and I still don't know why. Loading the textures themselvs and getting the helmet on scene was easy, I've been doing basically that as extra credit on all the assignments up to now
+
+"""
+
+    // TODO: Load relevent textures cafeColorMap, cafeNormalMap, cafeOccRoughMetalMap
+    // using THREE.TextureLoader
+
+    const albedoMap = new THREE.TextureLoader().load('gltf/Default_albedo.jpg');
+    const ambientOcclusionMap = new THREE.TextureLoader().load('gltf/Default_AO.jpg');
+    const emissiveMap = new THREE.TextureLoader().load('gltf/Default_emissive.jpg');
+    const metalRoughnessMap = new THREE.TextureLoader().load('gltf/Default_metalRoughness.jpg');
+    const normalMap = new THREE.TextureLoader().load('gltf/Default_normal.jpg');
+
+
+
+
+    const helmetMaterial = new THREE.MeshStandardMaterial({
+  // TODO: pass texture maps to the material. And set material's metalness.
+  map: albedoMap,
+  aoMap: ambientOcclusionMap,
+  emissiveMap: emissiveMap,
+  roughnessMap: metalRoughnessMap,
+  metalnessMap: metalRoughnessMap,
+  normalMap: normalMap,
+  metalness: 1,
+});
+
+  loadAndPlaceGLB("gltf/DamagedHelmet.gltf", helmetMaterial, function (helmet) {
+    helmet.position.set(3.8, 0.4, -1.3);
+    helmet.scale.set(5, 5, 5);
+    helmet.traverse(obj => {
+      if (obj.isMesh && !obj.geometry.attributes.uv2 && obj.geometry.attributes.uv) {
+        obj.geometry.setAttribute('uv2', obj.geometry.attributes.uv);
+      }
+    });
+    scene.add(helmet);
+  });
+
+"""
+
+But for the life of me I could not figure out how to get the maps to actually render to the helmet. This is as close as I got:
+
+
+![alt text](photos/Part1dAttempt.png)
+
+
+I ended up 1) running out of time and 2) getting frustrated so just for the sake of getting a finished product that matched the reference image I swapped the GLB with a GLFE loader. I am aware this was not the intent of the assignment but I was not going to be able to leave this without those textures displaying in some way shape or form and getting them to load the intended way was becoming somewhat of a lost cause for me.
+
+"""
+    if (shader.material == helmetMaterial) {
+    const loader = new GLTFLoader().setPath('gltf/');
+    loader.load('DamagedHelmet.gltf', function (gltf) {
+        const model = gltf.scene;
+        model.position.set(3.8, 0.4, -1.3);
+        model.scale.set(10,10,10);
+
+    scene.add(model);
+  });
+
+"""
+
+![alt text](photos/Part1dUsingGLTFLoader.png)
+
+
+
+
+
+
+
+
